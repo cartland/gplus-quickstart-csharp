@@ -35,9 +35,9 @@ using System.Web.SessionState;
 // Generated libraries for Google APIs
 using Google.Apis.Authentication.OAuth2;
 using Google.Apis.Authentication.OAuth2.DotNetOpenAuth;
-using Google.Apis.Oauth2.v2;
-using Google.Apis.Oauth2.v2.Data;
+using Google.Apis.Services;
 using Google.Apis.Util;
+
 using Google.Apis.Plus.v1;
 using Google.Apis.Plus.v1.Data;
 
@@ -48,7 +48,7 @@ using DotNetOpenAuth.OAuth2;
 // For JSON parsing.
 using Newtonsoft.Json;
 
-namespace GPlus_ServerSideFlow
+namespace GPlusQuickstartCsharp
 {
     /// <summary>
     ///  This is a minimal implementation of Google+ Sign-In that
@@ -84,7 +84,7 @@ namespace GPlus_ServerSideFlow
         public void ProcessRequest(HttpContext context)
         {
             // Redirect base path to signin.
-            if (context.Request.Path.Equals("/"))
+            if (context.Request.Path.EndsWith("/"))
             {
                 context.Response.RedirectPermanent("signin.ashx");
             }
@@ -92,7 +92,7 @@ namespace GPlus_ServerSideFlow
 
             // This is reached when the root document is passed. Return HTML
             // using index.html as a template.
-            if (context.Request.Path.Equals("/signin.ashx"))
+            if (context.Request.Path.EndsWith("/signin.ashx"))
             {
                 String state = (String)context.Session["state"];
 
@@ -180,6 +180,14 @@ namespace GPlus_ServerSideFlow
                     return;
                 }
             }
+            else if (context.Request.Path.Contains("/connect"))
+            {
+                // The user is already connected and credentials are cached.
+                context.Response.ContentType = "application/json";
+                context.Response.StatusCode = 200;
+                context.Response.Write(JsonConvert.SerializeObject("Current user is already connected."));
+                return;
+            }
             else
             {
                 // Register the authenticator and construct the Plus service
@@ -198,7 +206,10 @@ namespace GPlus_ServerSideFlow
                     {
                         NoCaching = true
                     };
-                ps = new PlusService(authenticator);
+                ps = new PlusService(new BaseClientService.Initializer()
+                {
+                  Authenticator = authenticator
+                });
             }
 
             // Perform an authenticated API request to retrieve the list of
